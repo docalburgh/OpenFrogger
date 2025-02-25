@@ -16,33 +16,51 @@ impl Row {
 		}
 	}
 }
-
+//consider making gameboard a vec of Row(s)
+//Board will have 7 rows, each 14 tiles wide.
 #[derive(Debug)]
 struct GameState {
-	gameboard: Row,
-	player: usize //eventually going to be a tuple of coordinates x,y
-}
+	gameboard: Vec<Row>,
+	player: (usize, usize),
+} 
 
 impl GameState {
-	fn formatter(&self) {
-		for (index, &boolean) in self.gameboard.objects.iter().enumerate() {
-			if index == self.player {
-				print!("{}", constants::PLAYER);
-			} else if boolean {
-				print!("{}", &self.gameboard.object_label);
-			} else {
-				print!("{}", &self.gameboard.environment_label);
-			}
-		}
-	}
+    fn formatter(&self) {
+        // Iterate over each row with its index.
+        for (row_index, row) in self.gameboard.iter().enumerate() {
+            // For each row, iterate over each column.
+            for (col_index, &tile) in row.objects.iter().enumerate() {
+                // If the current coordinates match the player's, print the player symbol.
+                if (row_index, col_index) == self.player {
+                    print!("{}", constants::PLAYER);
+                } else if tile {
+                    // If the boolean is true, print the object's label.
+                    print!("{}", row.object_label);
+                } else {
+                    // Otherwise, print the environment label.
+                    print!("{}", row.environment_label);
+                }
+            }
+            // Move to the next line after finishing a row.
+            println!();
+        }
+    }
 }
 
 fn main() {
-	let row1 = Row::new(vec![true, false, true, false, false], constants::TREE, constants::GRASS);
+	let rows = vec![Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
+	Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
+	Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
+	Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
+	Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
+	Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
+	Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),];
+	
 	let game_state = GameState {
-		gameboard: row1,
-		player: 0,
+		gameboard: rows,
+		player: (0, 0),
 	};
+	
 	game_state.formatter();
 }
 
