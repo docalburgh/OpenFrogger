@@ -33,7 +33,7 @@ impl GameState {
 		loop {
 			print!("\x1B[2J\x1B[1;1H");
 			self.formatter();
-			self.update_player().await;
+			self.key_reader_catchall().await;
 			thread::sleep(Duration::from_millis(50));
 		}
 	}
@@ -68,9 +68,8 @@ impl GameState {
 		game_state
 	}
 
-	async fn update_player(&mut self) {
-		if let Some(key) = self.key_reader.read_key().await {
-			match key {
+	fn player_movement(&mut self, key: Key) {
+		match key {
 				Key::Char('w') => if self.player.0 > 0
 					{self.player.0 -= 1},
 				Key::Char('a') => if self.player.1 > 0 
@@ -81,7 +80,24 @@ impl GameState {
 					{self.player.1 += 1},
 				Key::Escape => std::process::exit(0),
 				_ => (),
+			
+		}
+	}
+
+	async fn key_reader_catchall(&mut self) {
+		if let Some(key) = self.key_reader.read_key().await {
+			match key {
+				Key::Char('w') | Key::Char('a') | Key::Char('s') | Key::Char('d') =>
+				self.player_movement(key),
+				_ => self.misc_key(key),
 			}
+		}
+	}
+
+	fn misc_key(&mut self, key: Key) {
+		match key {
+			Key::Escape => std::process::exit(0),
+			_ => (),
 		}
 	}
 }
