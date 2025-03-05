@@ -71,10 +71,14 @@ impl GameState {
 	async fn update_player(&mut self) {
 		if let Some(key) = self.key_reader.read_key().await {
 			match key {
-				Key::Char('w') => self.player.0 -= 1,
-				Key::Char('a') => self.player.1 -= 1,
-				Key::Char('s') => self.player.0 += 1,
-				Key::Char('d') => self.player.1 += 1,
+				Key::Char('w') => if self.player.0 > 0
+					{self.player.0 -= 1},
+				Key::Char('a') => if self.player.1 > 0 
+					{self.player.1 -= 1},
+				Key::Char('s') => if self.player.0 < 6
+					{self.player.0 += 1},
+				Key::Char('d') => if self.player.1 < 13
+					{self.player.1 += 1},
 				Key::Escape => std::process::exit(0),
 				_ => (),
 			}
