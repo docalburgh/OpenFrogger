@@ -24,7 +24,7 @@ impl Row {
 
 //standalone function
 pub fn create_random_row() -> Row {
-	let objects: Vec<bool> = (0..15).map(|_| rand::rng().random_bool(0.5)).collect();
+	let objects: Vec<bool> = (0..14).map(|_| rand::rng().random_bool(0.5)).collect();
 	Row::new(objects, constants::GRASS, constants::TREE)
 }
 
@@ -79,6 +79,7 @@ impl GameState {
 	}
 
 	fn player_movement(&mut self, key: Key) {
+		let previous_row = self.player.0;
 		match key {
 				Key::Char('w') => if self.player.0 > 0
 					{self.player.0 -= 1},
@@ -92,7 +93,11 @@ impl GameState {
 				_ => (),
 			
 		}
+		if previous_row > 1 && self.player.0 <= 1 {
+			self.update_stack();
+		}
 	}
+
 
 	async fn key_reader_catchall(&mut self) {
 		if let Some(key) = self.key_reader.read_key().await {
@@ -112,19 +117,26 @@ impl GameState {
 	}
 
 	fn update_stack(&mut self) {
-		//run create_random_row
-		let new_row = create_random_row();
+		if self.player_position_checker() {
+			//run create_random_row
+			let new_row = create_random_row();
 
-		//insert new random row at beginning of the gameboard vector
-		self.gameboard.insert(0, new_row);
+			//insert new random row at beginning of the gameboard vector
+			self.gameboard.insert(0, new_row);
 
-		//remove bottom most row from memory
-		self.gameboard.pop();
+			//remove bottom most row from memory
+			self.gameboard.pop();
 
-		//increment player score
-		self.player_score +=1;
+			//increment player score
+			self.player_score +=1;
+		} 
+	}
+
+	fn player_position_checker(&mut self) -> bool {
+		self.player.0 <= 1 
 	}
 }
+
 
 #[derive(Debug)]
 pub struct KeyReader {
