@@ -3,6 +3,7 @@ use std::thread;
 use std::time::Duration;
 use tokio::spawn;
 use console::{Key, Term};
+use rand::Rng;
 
 #[derive(Debug)]
 pub struct Row {
@@ -20,12 +21,20 @@ impl Row {
 		}
 	}
 }
-//Board will have 7 rows, each 14 tiles wide.
+
+//standalone function
+pub fn create_random_row() -> Row {
+	let objects: Vec<bool> = (0..15).map(|_| rand::rng().random_bool(0.5)).collect();
+	Row::new(objects, constants::GRASS, constants::TREE)
+}
+
+//Board has 7 rows, each 14 tiles wide.
 #[derive(Debug)]
 struct GameState {
 	gameboard: Vec<Row>,
 	player: (usize, usize),
 	key_reader: KeyReader,
+	player_score: u16, //u16 means max score is 65,535
 } 
 
 impl GameState {
@@ -54,7 +63,7 @@ impl GameState {
     }
 
 	fn new_game() -> Self {
-		let game_state = GameState {
+		GameState {
 			gameboard: vec![Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
 			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
 			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
@@ -62,10 +71,11 @@ impl GameState {
 			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
 			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
 			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),],
-			player: (0, 0),
+			player: (6, 7),
 			key_reader: KeyReader::new(),
-		};
-		game_state
+			player_score: 0,
+		}
+		
 	}
 
 	fn player_movement(&mut self, key: Key) {
@@ -99,6 +109,20 @@ impl GameState {
 			Key::Escape => std::process::exit(0),
 			_ => (),
 		}
+	}
+
+	fn update_stack(&mut self) {
+		//run create_random_row
+		let new_row = create_random_row();
+
+		//insert new random row at beginning of the gameboard vector
+		self.gameboard.insert(0, new_row);
+
+		//remove bottom most row from memory
+		self.gameboard.pop();
+
+		//increment player score
+		self.player_score +=1;
 	}
 }
 
