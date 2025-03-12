@@ -79,7 +79,6 @@ impl GameState {
 	}
 
 	fn player_movement(&mut self, key: Key) {
-		let previous_row = self.player.0;
 		match key {
 				Key::Char('w') => if self.player.0 > 0
 					{self.player.0 -= 1},
@@ -93,8 +92,9 @@ impl GameState {
 				_ => (),
 			
 		}
-		if previous_row > 1 && self.player.0 <= 1 {
+		if self.player.0 <= 1 {
 			self.update_stack();
+			self.player.0 += 1;
 		}
 	}
 
