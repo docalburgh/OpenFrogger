@@ -21,7 +21,7 @@ impl BaseRow {
 		}
 	}
 }
-
+//try modifying this code with formatters logic
 impl RowTrait for BaseRow {
 	fn display(&self) {
         for &tile in &self.objects {
@@ -37,6 +37,15 @@ pub struct DynamicRow {
 	tick_count: u8,
 	interval: u8,
 	direction: bool,
+}
+//potentially mod this w/old formatter code
+impl RowTrait for DynamicRow {
+	fn display(&self) {
+		for &tile in &self.base.objects {
+			print!("{}", if tile { self.base.object_label } else { self.base.environment_label });
+        }
+        println!();
+	}
 }
 
 impl DynamicRow {
@@ -75,13 +84,6 @@ impl RowTrait for Stream {
 	}
 }
 
-/*impl RowType for Stream {
-	//function logic goes here
-	fn get_base_row(&self) -> &BaseRow {
-		&self.dynamic_row.base
-	}
-}*/
-
 #[derive(Debug)]
 pub struct Road {
 	pub dynamic_row: DynamicRow,
@@ -102,7 +104,6 @@ impl Road {
 
 impl RowTrait for Road {
     fn display(&self) {
-        // Delegate to the BaseRow display
         self.dynamic_row.base.display();
     }
 }
@@ -146,16 +147,12 @@ impl GameState {
 
 	fn formatter(&self) {
         for (row_index, row) in self.gameboard.iter().enumerate() {
-            for (col_index, &tile) in row.objects.iter().enumerate() {
+			for (col_index, &tile) in row.objects.iter().enumerate() {
                 if (row_index, col_index) == self.player {
                     print!("{}", constants::PLAYER);
-                } else if tile {
-                    print!("{}", row.object_label);
-                } else {
-                    print!("{}", row.environment_label);
-                }
-            }
-            println!();
+				}	
+			}
+			row.display();
         }
     }
 
