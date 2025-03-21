@@ -6,15 +6,15 @@ use console::{Key, Term};
 use rand::Rng;
 
 #[derive(Debug)]
-pub struct Row {
+pub struct BaseRow {
 	objects: Vec<bool>,
 	object_label: char,
 	environment_label: char,
 }
 
-impl Row {
+impl BaseRow {
 	pub fn new(objects: Vec<bool>, object_label: char, environment_label: char) -> Self {
-		Row {
+		BaseRow {
 			objects,
 			object_label,
 			environment_label,
@@ -22,16 +22,113 @@ impl Row {
 	}
 }
 
-//standalone function
-pub fn create_random_row() -> Row {
+impl RowTrait for BaseRow {
+	fn display(&self) {
+        for &tile in &self.objects {
+            print!("{}", if tile { self.object_label } else { self.environment_label });
+        }
+        println!();
+    }
+}
+
+#[derive(Debug)]
+pub struct DynamicRow {
+	base: BaseRow,
+	tick_count: u8,
+	interval: u8,
+	direction: bool,
+}
+
+impl DynamicRow {
+	pub fn tick(&mut self) {
+		//if the row is at tick_count threshold
+		//if tick_count <- interval {
+		//	self.update_row}
+	}
+
+	pub fn update_dynamic_row(&mut self) {
+		//perform the dynamic movements of the row horizontally based on direction
+	}
+}
+
+#[derive(Debug)]
+pub struct Stream {
+	pub dynamic_row: DynamicRow,
+}
+
+impl Stream {
+	pub fn new(objects: Vec<bool>, object_label: char, environment_label: char) -> Self {
+        let base = BaseRow::new(objects, object_label, environment_label);
+        let dynamic_row = DynamicRow {
+            base,
+            tick_count: 0, //made up number
+            interval: 0, //made up number
+            direction: true, //bool doesnt mean anything yet, just need code to run first
+        };
+        Self { dynamic_row: dynamic_row }
+    }
+}
+
+impl RowTrait for Stream {
+	fn display(&self) {
+		self.dynamic_row.base.display();
+	}
+}
+
+/*impl RowType for Stream {
+	//function logic goes here
+	fn get_base_row(&self) -> &BaseRow {
+		&self.dynamic_row.base
+	}
+}*/
+
+#[derive(Debug)]
+pub struct Road {
+	pub dynamic_row: DynamicRow,
+}
+
+impl Road {
+    pub fn new(objects: Vec<bool>, object_label: char, environment_label: char) -> Self {
+        let base = BaseRow::new(objects, object_label, environment_label);
+        let dynamic_row = DynamicRow {
+            base,
+            tick_count: 0,
+            interval: 5,
+            direction: false,
+        };
+        Road { dynamic_row }
+    }
+}
+
+impl RowTrait for Road {
+    fn display(&self) {
+        // Delegate to the BaseRow display
+        self.dynamic_row.base.display();
+    }
+}
+
+pub trait RowTrait: std::fmt::Debug {
+	fn display(&self);
+}
+
+pub fn create_random_row() -> Box<dyn RowTrait> {
 	let objects: Vec<bool> = (0..14).map(|_| rand::rng().random_bool(0.5)).collect();
-	Row::new(objects, constants::GRASS, constants::TREE)
+	
+	if rand::rng().random_bool(0.5) {
+		Box::new(BaseRow::new(objects.clone(), constants::TREE, constants::GRASS))
+	} else {
+		if rand::rng().random_bool(0.5) {
+			Box::new(Stream::new(objects, constants::LOG, constants::WATER))
+		} else {
+			Box::new(Road::new(objects, constants::CAR, constants::ROAD))
+		}
+	}
 }
 
 //Board has 7 rows, each 14 tiles wide.
 #[derive(Debug)]
 struct GameState {
-	gameboard: Vec<Row>,
+	gameboard: Vec<Box<dyn RowTrait>>,
 	player: (usize, usize),
 	key_reader: KeyReader,
 	player_score: u16, //u16 means max score is 65,535
@@ -62,15 +159,16 @@ impl GameState {
         }
     }
 
+
 	fn new_game() -> Self {
 		GameState {
-			gameboard: vec![Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
-			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
-			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
-			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
-			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
-			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),
-			Row::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS),],
+			gameboard: vec![Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),],
 			player: (6, 7),
 			key_reader: KeyReader::new(),
 			player_score: 0,
