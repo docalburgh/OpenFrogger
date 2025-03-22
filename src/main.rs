@@ -29,6 +29,22 @@ impl RowTrait for BaseRow {
         }
         println!();
     }
+
+	fn get_objects(&self) -> &Vec<bool> {
+		&self.objects
+	}
+
+	fn get_char_at(&self, index: usize) -> char {
+        if index < self.objects.len() {
+            if self.objects[index] {
+                self.object_label
+            } else {
+                self.environment_label
+            }
+        } else {
+            ' ' // Default for out of bounds
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -46,6 +62,21 @@ impl RowTrait for DynamicRow {
         }
         println!();
 	}
+	fn get_objects(&self) -> &Vec<bool> {
+		&self.base.objects
+	}
+
+	fn get_char_at(&self, index: usize) -> char {
+        if index < self.base.objects.len() {
+            if self.base.objects[index] {
+                self.base.object_label
+            } else {
+                self.base.environment_label
+            }
+        } else {
+            ' ' // Default for out of bounds
+        }
+    }
 }
 
 impl DynamicRow {
@@ -82,6 +113,22 @@ impl RowTrait for Stream {
 	fn display(&self) {
 		self.dynamic_row.base.display();
 	}
+
+	fn get_objects(&self) -> &Vec<bool> {
+        &self.dynamic_row.base.objects
+    }
+
+	fn get_char_at(&self, index: usize) -> char {
+        if index < self.dynamic_row.base.objects.len() {
+            if self.dynamic_row.base.objects[index] {
+                self.dynamic_row.base.object_label
+            } else {
+                self.dynamic_row.base.environment_label
+            }
+        } else {
+            ' ' // Default for out of bounds
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -106,10 +153,28 @@ impl RowTrait for Road {
     fn display(&self) {
         self.dynamic_row.base.display();
     }
+
+	fn get_objects(&self) -> &Vec<bool> {
+        &self.dynamic_row.base.objects
+    }
+
+	fn get_char_at(&self, index: usize) -> char {
+        if index < self.dynamic_row.base.objects.len() {
+            if self.dynamic_row.base.objects[index] {
+                self.dynamic_row.base.object_label
+            } else {
+                self.dynamic_row.base.environment_label
+            }
+        } else {
+            ' ' // Default for out of bounds
+        }
+    }
 }
 
 pub trait RowTrait: std::fmt::Debug {
 	fn display(&self);
+	fn get_objects(&self) -> &Vec<bool>;
+	fn get_char_at(&self, index: usize) -> char;
 }
 
 pub fn create_random_row() -> Box<dyn RowTrait> {
@@ -146,14 +211,16 @@ impl GameState {
 	}
 
 	fn formatter(&self) {
-        for (row_index, row) in self.gameboard.iter().enumerate() {
-			for (col_index, &tile) in row.objects.iter().enumerate() {
-                if (row_index, col_index) == self.player {
-                    print!("{}", constants::PLAYER);
-				}	
+		for (row_index, row) in self.gameboard.iter().enumerate() {
+			for col_index in 0..row.get_objects().len() {
+				if (row_index, col_index) == self.player {
+					print!("{}", constants::PLAYER);
+				} else {
+					print!("{}", row.get_char_at(col_index));
+				}
 			}
-			row.display();
-        }
+			println!();
+		}
     }
 
 
