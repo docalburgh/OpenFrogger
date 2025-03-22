@@ -180,14 +180,10 @@ pub trait RowTrait: std::fmt::Debug {
 pub fn create_random_row() -> Box<dyn RowTrait> {
 	let objects: Vec<bool> = (0..14).map(|_| rand::rng().random_bool(0.5)).collect();
 	
-	if rand::rng().random_bool(0.5) {
-		Box::new(BaseRow::new(objects.clone(), constants::TREE, constants::GRASS))
-	} else {
-		if rand::rng().random_bool(0.5) {
-			Box::new(Stream::new(objects, constants::LOG, constants::WATER))
-		} else {
-			Box::new(Road::new(objects, constants::CAR, constants::ROAD))
-		}
+	match rand::rng().random_range(0..3) {
+		0 => Box::new(BaseRow::new(objects.clone(), constants::TREE, constants::GRASS)),
+		1 => Box::new(Stream::new(objects, constants::LOG, constants::WATER)),
+		_ => Box::new(Road::new(objects, constants::CAR, constants::ROAD)),
 	}
 }
 
