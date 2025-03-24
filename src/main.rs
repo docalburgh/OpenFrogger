@@ -217,6 +217,7 @@ impl GameState {
 			}
 			println!();
 		}
+		println!();
 		println!("PLAYER SCORE: {}", self.player_score);
     }
 
@@ -230,7 +231,7 @@ impl GameState {
 			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
 			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
 			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),],
-			player: (6, 7),
+			player: (6, 6),
 			key_reader: KeyReader::new(),
 			player_score: 0,
 		}
@@ -238,6 +239,10 @@ impl GameState {
 	}
 
 	fn player_movement(&mut self, key: Key) {
+		//this captures current player pos before a move
+		//this is important for blocking logic
+		let current_position = self.player;
+		
 		match key {
 				Key::Char('w') => if self.player.0 > 0
 					{self.player.0 -= 1},
@@ -255,8 +260,27 @@ impl GameState {
 			self.update_stack();
 			self.player.0 += 1;
 		}
+		//create tree blocking logic here
+		let row_index = self.player.0;
+		let col_index = self.player.1;
+		//check if player will move into TREE,
+		//if so, return player to current position
+		if row_index < self.gameboard.len() {
+			let row = &self.gameboard[row_index];
+			// Check if there's a tree at this position
+			if col_index < row.get_objects().len() && row.get_objects()[col_index] && row.get_char_at(col_index) == constants::TREE {
+				// Revert to previous position if there's a tree
+				self.player = current_position;
+			}
+			if col_index < row.get_objects().len() && row.get_objects()[col_index] && row.get_char_at(col_index) == constants::CAR {
+				//print ROAD KILL to screen
+				println!("ROAD KILL!");
+				//pause for 3 seconds before exiting game
+				thread::sleep(Duration::from_secs(3));
+				std::process::exit(0);
+			}
+		}
 	}
-
 
 	async fn key_reader_catchall(&mut self) {
 		if let Some(key) = self.key_reader.read_key().await {
