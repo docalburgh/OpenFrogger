@@ -217,6 +217,7 @@ impl GameState {
 			}
 			println!();
 		}
+		println!("PLAYER SCORE: {}", self.player_score);
     }
 
 
