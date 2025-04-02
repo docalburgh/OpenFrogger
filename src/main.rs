@@ -45,6 +45,8 @@ impl RowTrait for BaseRow {
             ' ' // Default for out of bounds
         }
     }
+
+	fn tick(&mut self) {}
 }
 
 #[derive(Debug)]
@@ -81,13 +83,27 @@ impl RowTrait for DynamicRow {
 
 impl DynamicRow {
 	pub fn tick(&mut self) {
-		//if the row is at tick_count threshold
-		//if tick_count <- interval {
-		//	self.update_row}
+		self.tick_count += 1;
+    	if self.tick_count >= self.interval {
+        	self.update_dynamic_row();
+        	self.tick_count = 0; // Reset the counter after an update
+    	}
 	}
 
 	pub fn update_dynamic_row(&mut self) {
-		//perform the dynamic movements of the row horizontally based on direction
+		let mut objects = self.base.objects.clone();
+		
+		if self.direction {
+			// Move right
+			let last = objects.pop().unwrap_or(false);
+			objects.insert(0, last);
+		} else {
+			// Move left
+			let first = objects.remove(0);
+			objects.push(first);
+		}
+		
+		self.base.objects = objects;
 	}
 }
 
@@ -101,9 +117,9 @@ impl Stream {
         let base = BaseRow::new(objects, object_label, environment_label);
         let dynamic_row = DynamicRow {
             base,
-            tick_count: 0, //made up number
-            interval: 0, //made up number
-            direction: true, //bool doesnt mean anything yet, just need code to run first
+            tick_count: 0, 
+            interval: 7, //higher interval means slower speed
+            direction: true,
         };
         Self { dynamic_row: dynamic_row }
     }
@@ -129,6 +145,10 @@ impl RowTrait for Stream {
             ' ' // Default for out of bounds
         }
     }
+
+	fn tick(&mut self) {
+		self.dynamic_row.tick();
+	}
 }
 
 #[derive(Debug)]
@@ -142,7 +162,7 @@ impl Road {
         let dynamic_row = DynamicRow {
             base,
             tick_count: 0,
-            interval: 5,
+            interval: 7,
             direction: false,
         };
         Road { dynamic_row }
@@ -169,21 +189,34 @@ impl RowTrait for Road {
             ' ' // Default for out of bounds
         }
     }
+
+	fn tick(&mut self) {
+		self.dynamic_row.tick();
+	}
 }
 
 pub trait RowTrait: std::fmt::Debug {
 	fn display(&self);
 	fn get_objects(&self) -> &Vec<bool>;
 	fn get_char_at(&self, index: usize) -> char;
+	fn tick(&mut self) {}
 }
 
 pub fn create_random_row() -> Box<dyn RowTrait> {
-	let objects: Vec<bool> = (0..14).map(|_| rand::rng().random_bool(0.5)).collect();
-	
+	let objects_tree: Vec<bool> = (0..14).map(|_| rand::rng().random_bool(0.3)).collect();
+	let objects_log: Vec<bool> = (0..14).map(|_| rand::rng().random_bool(0.6)).collect();
+	let objects_car: Vec<bool> = (0..14).map(|_| rand::rng().random_bool(0.2)).collect();
+
 	match rand::rng().random_range(0..3) {
-		0 => Box::new(BaseRow::new(objects.clone(), constants::TREE, constants::GRASS)),
-		1 => Box::new(Stream::new(objects, constants::LOG, constants::WATER)),
-		_ => Box::new(Road::new(objects, constants::CAR, constants::ROAD)),
+		0 => {
+			Box::new(BaseRow::new(objects_tree, constants::TREE, constants::GRASS))
+		},
+		1 => {
+			Box::new(Stream::new(objects_log, constants::LOG, constants::WATER))
+		},
+		_ => {
+			Box::new(Road::new(objects_car, constants::CAR, constants::ROAD))
+		},
 	}
 }
 
@@ -200,6 +233,11 @@ impl GameState {
     async fn run(&mut self) {
 		loop {
 			print!("\x1B[2J\x1B[1;1H");
+			for row in &mut self.gameboard {
+				row.tick();
+			}
+			let current_position = self.player;
+			self.check_collision(current_position);
 			self.formatter();
 			self.key_reader_catchall().await;
 			thread::sleep(Duration::from_millis(50));
@@ -224,13 +262,13 @@ impl GameState {
 
 	fn new_game() -> Self {
 		GameState {
-			gameboard: vec![Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
-			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
-			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
-			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
-			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
-			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),
-			Box::new(BaseRow::new(vec![false, true, false, true, false, true, false, true, false, true, false, true, false, true], constants::TREE, constants::GRASS)),],
+			gameboard: vec![Box::new(BaseRow::new(vec![false, false, false, false, false, false, false, false, false, false, false, false, false, false], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![true, false, false, false, false, false, false, false, false, false, false, false, false, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![true, true, false, false, false, false, false, false, false, false, false, false, true, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![true, true, true, false, false, false, false, false, false, false, false, true, true, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![true, true, true, true, false, false, false, false, false, false, true, true, true, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![true, true, true, true, true, true, false, false, false, true, true, true, true, true], constants::TREE, constants::GRASS)),
+			Box::new(BaseRow::new(vec![true, true, true, true, true, true, true, true, true, true, true, true, true, true], constants::TREE, constants::GRASS)),],
 			player: (6, 6),
 			key_reader: KeyReader::new(),
 			player_score: 0,
@@ -239,47 +277,25 @@ impl GameState {
 	}
 
 	fn player_movement(&mut self, key: Key) {
-		//this captures current player pos before a move
-		//this is important for blocking logic
 		let current_position = self.player;
-		
 		match key {
-				Key::Char('w') => if self.player.0 > 0
-					{self.player.0 -= 1},
-				Key::Char('a') => if self.player.1 > 0 
-					{self.player.1 -= 1},
-				Key::Char('s') => if self.player.0 < 6
-					{self.player.0 += 1},
-				Key::Char('d') => if self.player.1 < 13
-					{self.player.1 += 1},
-				Key::Escape => std::process::exit(0),
+			Key::Char('w') => if self.player.0 > 0
+				{self.player.0 -= 1},
+			Key::Char('a') => if self.player.1 > 0 
+				{self.player.1 -= 1},
+			Key::Char('s') => if self.player.0 < 6
+				{self.player.0 += 1},
+			Key::Char('d') => if self.player.1 < 13
+				{self.player.1 += 1},
+			Key::Escape => std::process::exit(0),
 				_ => (),
-			
 		}
+		self.check_collision(current_position);
 		if self.player.0 <= 1 {
 			self.update_stack();
 			self.player.0 += 1;
 		}
-		//create tree blocking logic here
-		let row_index = self.player.0;
-		let col_index = self.player.1;
-		//check if player will move into TREE,
-		//if so, return player to current position
-		if row_index < self.gameboard.len() {
-			let row = &self.gameboard[row_index];
-			// Check if there's a tree at this position
-			if col_index < row.get_objects().len() && row.get_objects()[col_index] && row.get_char_at(col_index) == constants::TREE {
-				// Revert to previous position if there's a tree
-				self.player = current_position;
-			}
-			if col_index < row.get_objects().len() && row.get_objects()[col_index] && row.get_char_at(col_index) == constants::CAR {
-				//print ROAD KILL to screen
-				println!("ROAD KILL!");
-				//pause for 3 seconds before exiting game
-				thread::sleep(Duration::from_secs(3));
-				std::process::exit(0);
-			}
-		}
+		//put self.collision() back here if bug doesn't get fixed.
 	}
 
 	async fn key_reader_catchall(&mut self) {
@@ -318,8 +334,56 @@ impl GameState {
 	fn player_position_checker(&mut self) -> bool {
 		self.player.0 <= 1 
 	}
-}
 
+	fn check_collision(&mut self, current_position: (usize, usize)) {
+        self.car_collision();
+		self.tree_collision(current_position);
+		self.water_collision();
+    }
+
+	fn car_collision(&mut self) {
+		let row_index = self.player.0;
+        let col_index = self.player.1;
+        
+        if row_index < self.gameboard.len() {
+            let row = &self.gameboard[row_index];
+            if col_index < row.get_objects().len() && row.get_objects()[col_index] && row.get_char_at(col_index) == constants::CAR {
+                println!("ROAD KILL!");
+                thread::sleep(Duration::from_secs(3));
+                std::process::exit(0);
+            }
+        }
+	}
+
+	fn tree_collision(&mut self, current_position: (usize, usize)) {
+		let row_index = self.player.0;
+		let col_index = self.player.1;
+		//check if player will move into TREE,
+		//if so, return player to current position
+		if row_index < self.gameboard.len() {
+			let row = &self.gameboard[row_index];
+			// Check if there's a tree at this position
+			if col_index < row.get_objects().len() && row.get_objects()[col_index] && row.get_char_at(col_index) == constants::TREE {
+				// Revert to previous position if there's a tree
+				self.player = current_position;
+			}
+		}
+	}
+
+	fn water_collision(&mut self) {
+		let row_index = self.player.0;
+        let col_index = self.player.1;
+        
+        if row_index < self.gameboard.len() {
+            let row = &self.gameboard[row_index];
+            if col_index < row.get_objects().len() && !row.get_objects()[col_index] && row.get_char_at(col_index) == constants::WATER {
+                println!("WATERLOGGED!");
+                thread::sleep(Duration::from_secs(3));
+                std::process::exit(0);
+            }
+        }
+	}
+}
 
 #[derive(Debug)]
 pub struct KeyReader {
